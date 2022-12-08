@@ -1,3 +1,18 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@font-face {
+	font-family: 'Rowdies';
+	font-style: normal;
+	font-weight: 500;
+	src: url('/fonts/Rowdies-Regular.ttf'); /* IE9 Compat Modes */
+	src: local(''), url('/fonts/Rowdies-Regular.ttf') format('truetype'); /* Legacy iOS */
+}
+@font-face {
+	font-family: 'Rowdies';
+	font-style: bold;
+	font-weight: 600;
+	src: url('/fonts/Rowdies-Bold.ttf'); /* IE9 Compat Modes */
+	src: local(''), url('/fonts/Rowdies-Bold.ttf') format('truetype'); /* Legacy iOS */
+}
