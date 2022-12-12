@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 	import '$lib/global.css';
 	import FaChevronDown from 'svelte-icons/fa/FaChevronDown.svelte';
 	import GiPalette from 'svelte-icons/gi/GiPalette.svelte';
@@ -6,90 +6,20 @@
 	import FaTwitter from 'svelte-icons/fa/FaTwitter.svelte';
 	import { onMount, setContext } from 'svelte';
 	import { themeChange } from 'theme-change';
-	import { initializeApp } from 'firebase/app';
 	import { page } from '$app/stores';
 	import { session } from '$lib/stores/session';
 	import { goto } from '$app/navigation';
-	import {
-		getAuth,
-		signInWithEmailAndPassword,
-		signInWithPopup,
-		signInWithRedirect,
-		GoogleAuthProvider,
-		TwitterAuthProvider,
-		signOut
-	} from 'firebase/auth';
-	import { writable } from 'svelte/store';
+	import { signInWith, signOut } from '$lib/client/firebaseUtils';
+	import { initializeFirebase } from '$lib/client/firebaseUtils';
 
 	/** @type {import('./$types').LayoutData} */
 	export let data;
 
-	const app = initializeApp(data.firebaseClientConfig);
-
-	const auth = getAuth();
-	console.log('current user init:');
-	let user = auth.currentUser;
-
-	console.log('current user session:' + $session.uid);
-
-	// login function
-	const signInWithGoogle = () => {
-		signInWithPopup(auth, new GoogleAuthProvider())
-			.then((result) => {
-				// This gives you a Google Access Token. You can use it to access the Google API.
-				const credential = GoogleAuthProvider.credentialFromResult(result);
-				if (credential && credential.accessToken) {
-					const token = credential.accessToken;
-					// The signed-in user info.
-					user = result.user;
-					$session = {
-						uid: user.uid,
-						displayName: user.displayName || '',
-						avatarUrl: user.photoURL || ''
-					};
-					goto('/home');
-				} else {
-					alert("Couldn't get token from Google Authentication Services");
-				}
-			})
-			.catch((error) => {
-				const errorCode = error.code;
-				const errorMessage = error.message;
-				const email = error.customData.email;
-				const credential = GoogleAuthProvider.credentialFromError(error);
-				alert(errorCode + ' ' + errorMessage + '\n' + email + '\n' + credential);
-			});
-	};
-
-	const signInWithTwitter = () => {
-		signInWithPopup(auth, new TwitterAuthProvider())
-			.then((result) => {
-				// This gives you a the Twitter OAuth 1.0 Access Token and Secret.
-				// You can use these server side with your app's credentials to access the Twitter API.
-				const credential = TwitterAuthProvider.credentialFromResult(result);
-				if (credential && credential.accessToken) {
-					const token = credential.accessToken;
-					const secret = credential.secret;
-					// The signed-in user info.
-					user = result.user;
-					$session = {
-						uid: user.uid,
-						displayName: user.displayName || '',
-						avatarUrl: user.photoURL || ''
-					};
-					goto('/home');
-				} else {
-					alert("Couldn't get token from Google Authentication Services");
-				}
-			})
-			.catch((error) => {
-				const errorCode = error.code;
-				const errorMessage = error.message;
-				const email = error.customData.email;
-				const credential = GoogleAuthProvider.credentialFromError(error);
-				alert(errorCode + ' ' + errorMessage + '\n' + email + '\n' + credential);
-			});
-	};
+	try {
+		initializeFirebase(data.firebaseClientConfig);
+	} catch (ex) {
+		console.error(ex);
+	}
 
 	onMount(() => {
 		// init theme change library
@@ -101,20 +31,36 @@
 </script>
 
 <div class="navbar backdrop-blur-sm sticky top-0 z-10">
-	<div class="flex-1 px-2 lg:flex-none">
-		<a class="text-2xl font-bold text-primary font-display" href="/">4real</a>
+	<label for="my-drawer-2" class="btn btn-square btn-ghost drawer-button lg:hidden">
+		<svg
+			xmlns="http://www.w3.org/2000/svg"
+			fill="none"
+			viewBox="0 0 24 24"
+			class="inline-block w-6 h-6 stroke-current"
+			><path
+				stroke-linecap="round"
+				stroke-linejoin="round"
+				stroke-width="2"
+				d="M4 6h16M4 12h16M4 18h16"
+			/></svg
+		>
+	</label>
+	<div class="flex-1 px-4 lg:flex-none">
+		<a class="text-2xl font-bold text-primary font-display drop-shadow-md shadow-secondary" href="/"
+			>4real</a
+		>
 	</div>
 	<div class="flex justify-end flex-1 px-2 z-10">
 		<div class="flex items-stretch  z-10">
 			<div class="dropdown dropdown-end z-10">
-				<label tabindex="-1" class="btn btn-ghost rounded-btn">
+				<div tabindex="-1" class="btn btn-ghost rounded-btn">
 					<icon class="w-6 h-6">
 						<GiPalette />
 					</icon>
 					<icon class="w-3 h-3 ml-1">
 						<FaChevronDown />
 					</icon>
-				</label>
+				</div>
 				<ul class="menu dropdown-content p-2 shadow rounded-box w-52 mt-4 z-10">
 					<li>
 						<button
@@ -193,14 +139,12 @@
 				</ul>
 			</div>
 			<!--Logout button-->
-			{#if user}
+			{#if $session.uid}
 				<button
-					class="btn btn-primary"
+					class="btn btn-primary btn-outline"
 					on:click={() => {
-						// remove the token & user from localStorage
-						signOut(getAuth());
-						// redirect to the home page
-						location.href = '/';
+						signOut();
+						// location.href = '/';
 					}}>Logout</button
 				>
 			{/if}
@@ -208,13 +152,13 @@
 	</div>
 </div>
 
-{#if user}
+{#if $session.uid}
 	<slot />
 {:else}
 	<div class="hero min-h-screen bg-base-200">
 		<div class="hero-content flex-col lg:flex-row-reverse items-start">
 			<div class="text-center lg:text-left lg:mt-12 lg:ml-8">
-				<h1 class="text-5xl font-bold font-display">Get Connected. 4'real</h1>
+				<h1 class="text-5xl font-bold font-display">Collaborate. 4'real</h1>
 			</div>
 			<div class="card flex-shrink-0 w-full max-w-md shadow-2xl bg-base-100">
 				<div class="card-body">
@@ -223,12 +167,18 @@
 						<div class="label">
 							<span class="label-text font-medium">Sign in with</span>
 						</div>
-						<button on:click={signInWithGoogle} class="h-6 btn btn-outline opacity-50 w-1/3"
+						<button
+							on:click={() => {
+								signInWith('google');
+							}}
+							class="h-6 btn btn-outline opacity-50 w-1/3"
 							><icon class="w-6 h-6">
 								<FaGoogle />
 							</icon>
 						</button>
-						<button on:click={signInWithTwitter} class="h-6 btn btn-outline opacity-50 w-1/3"
+						<button
+							on:click={() => signInWith('twitter')}
+							class="h-6 btn btn-outline opacity-50 w-1/3"
 							><icon class="w-6 h-6">
 								<FaTwitter />
 							</icon>
@@ -237,9 +187,9 @@
 					<div class="divider"><span class="font-thin">Or continue with</span></div>
 
 					<div class="form-control">
-						<label class="label">
+						<div class="label">
 							<span class="label-text font-medium">Email</span>
-						</label>
+						</div>
 						<input
 							type="text"
 							placeholder="email"
@@ -248,21 +198,21 @@
 						/>
 					</div>
 					<div class="form-control">
-						<label class="label">
+						<div class="label">
 							<span class="label-text font-medium">Password</span>
-						</label>
+						</div>
 						<input
 							type="text"
 							placeholder="password"
 							bind:value={password}
 							class="input input-bordered"
 						/>
-						<label class="label">
-							<a href="#" class="label-text-alt link link-hover">Forgot password?</a>
-						</label>
+						<div class="label">
+							<a href="/forgot-password" class="label-text-alt link link-hover">Forgot password?</a>
+						</div>
 					</div>
 					<div class="form-control mt-6">
-						<button class="btn btn-primary" on:click={signInWithGoogle}>Login</button>
+						<button class="btn btn-primary">Login</button>
 					</div>
 				</div>
 			</div>

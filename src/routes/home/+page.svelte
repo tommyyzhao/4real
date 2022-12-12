@@ -4,6 +4,8 @@
 	import { session } from '$lib/stores/session';
 
 	export let data: PageData;
+	console.log('home page data');
+	console.log(data);
 </script>
 
 <h1>Dis is da home page for {$session.displayName}</h1>
@@ -12,7 +14,7 @@
 {#if $session.avatarUrl}
 	<div class="avatar">
 		<div class="w-24 mask mask-squircle">
-			<img src={$session.avatarUrl} alt="Profile photo" />
+			<img src={$session.avatarUrl} alt="Profile avatar" />
 		</div>
 	</div>
 {:else}
